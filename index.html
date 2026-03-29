@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<title>UUID → Color</title>
+<style>
+body { font-family: Arial; background:#111; color:#eee; }
+input, button { padding:8px; margin:5px; }
+
+#uuid {
+    width: 420px;
+}
+
+#colorBox {
+    width:100px; height:100px;
+    border:1px solid #555;
+    margin-top:10px;
+}
+
+a { color:#6cf; }
+</style>
+</head>
+<body>
+
+<h3>UUID → プレイヤーカラー</h3>
+
+<input id="uuid" placeholder="UUIDを入力">
+<button onclick="calc()">変換</button>
+
+<div>
+<a href="https://ja.minecraft.wiki/w/計算機/UUID変換" target="_blank">
+UUID変換ツール
+</a>
+</div>
+
+<div id="result"></div>
+<div id="colorBox"></div>
+
+<script>
+function uuidHashCode(uuid){
+    uuid = uuid.replace(/-/g, "");
+    if(uuid.length !== 32) return 0;
+
+    let msb = BigInt("0x" + uuid.slice(0,16));
+    let lsb = BigInt("0x" + uuid.slice(16));
+
+    let hilo = msb ^ lsb;
+    let hash = Number((hilo ^ (hilo >> 32n)) & 0xffffffffn);
+
+    return hash | 0;
+}
+
+function ARGB_color(alpha, color){
+    return ((alpha << 24) | (color & 0x00FFFFFF)) >>> 0; 
+}
+
+function ARGB_to_RGB(argb){
+    return {
+        r: (argb >> 16) & 255,
+        g: (argb >> 8) & 255,
+        b: argb & 255
+    };
+}
+
+function setBrightness({r,g,b}, factor){
+    return {
+        r: Math.floor(r * factor),
+        g: Math.floor(g * factor),
+        b: Math.floor(b * factor)
+    };
+}
+
+function calc(){
+    let uuid = document.getElementById("uuid").value.trim();
+    if(!uuid){
+        document.getElementById("result").innerText = "UUIDを入力してください";
+        return;
+    }
+
+    let hash = uuidHashCode(uuid);
+    let argb = ARGB_color(255, hash);
+    let rgb = ARGB_to_RGB(argb);
+    let bright = setBrightness(rgb, 0.9);
+
+    let hex = "#" +
+        bright.r.toString(16).padStart(2,"0") +
+        bright.g.toString(16).padStart(2,"0") +
+        bright.b.toString(16).padStart(2,"0");
+
+    document.getElementById("result").innerText =
+`hash: ${hash}
+ARGB: 0x${argb.toString(16).padStart(8,"0")}
+RGB: (${bright.r}, ${bright.g}, ${bright.b})
+HEX: ${hex}`;
+
+    document.getElementById("colorBox").style.background = hex;
+}
+</script>
+
+</body>
+</html>
